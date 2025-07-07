@@ -21,3 +21,4 @@ alloc:; Takes lenght of data in rdi and returns pointer in rax
 	mov [brk_pointer], rax
 	pop rax
 	ret
+

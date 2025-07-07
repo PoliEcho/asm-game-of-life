@@ -7,7 +7,7 @@ print_str: ; takes pointer to string in rdi and retuns in rax
     push rsi
     push rdx
     mov rsi, rdi
-    mov rdx, 0
+    xor rdx, rdx
 
 .count_loop:
     cmp byte [rsi+rdx], 0
@@ -25,7 +25,7 @@ print_str: ; takes pointer to string in rdi and retuns in rax
 
 global unsigned_int_to_ascii
 unsigned_int_to_ascii: ; takes pointer to array in rdi and value stored in rsi DOES NOT BOUNDS CHECK
-    mov r11, 0
+    xor r11, r11
     mov rcx, 10
     mov rax, rsi
 
@@ -41,7 +41,7 @@ unsigned_int_to_ascii: ; takes pointer to array in rdi and value stored in rsi D
 .loop_count_exit:
     push rax
 
-    mov rcx, 0
+    xor rcx, rcx
 
 .store_loop: ; basicly for loop
     cmp rcx, r11
@@ -60,3 +60,15 @@ unsigned_int_to_ascii: ; takes pointer to array in rdi and value stored in rsi D
 
     ret
 
+string_copy:; takes pointer to destination in rdi and pointer to source in rsi
+	
+	xor rax, rax
+
+	.copy_next_byte:
+	mov byte al, [rdi+rax]
+	mov [rsi+rax], al
+	inc rax
+	test rax,rax
+	jnz .copy_next_byte
+	ret
+	

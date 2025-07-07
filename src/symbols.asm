@@ -7,3 +7,4 @@ STDOUT		equ 1
 TIOCGWINSZ	equ 0x5413
 
 ASCII_ZERO 	equ 48
+ESC_CHAR 	equ 27

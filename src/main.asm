@@ -6,6 +6,11 @@ section .bss
 	term_rows: RESW 1
 	term_cols: RESW 1
 
+	gameboard_ptr: RESQ 1
+
+	extern cursor_rows
+	extern cursor_cols
+
 section .data
 	
 section .text
@@ -39,12 +44,12 @@ _start:
 	call init_alloc
 
 	mov ax, [term_rows]
-	dec ax; one less than terminal size for statusbar
 	mov cx, [term_cols]
 	mul rcx
 	mov rdi, rax
 	call alloc
-	mov r15, rax; stores pointer to gameboard array
+	mov [gameboard_ptr], rax; stores pointer to gameboard array
+
 
 
 
