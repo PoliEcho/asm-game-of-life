@@ -1,6 +1,4 @@
-SYS_WRITE equ 1
-STDOUT equ 1
-ASCII_ZERO 	equ 48
+%include "symbols.asm"
 
 section .text
 

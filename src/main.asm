@@ -1,19 +1,56 @@
-SYS_EXIT 	equ 60
-SYS_IOCTL	equ 16
-
-STDOUT		equ 1
-TIOCGWINSZ	equ 0x5413
+%include "symbols.asm"
 
 section .bss
+	multipurpuse_buf: RESB 8
 
-	str_buf: resb 4
+	term_rows: RESW 1
+	term_cols: RESW 1
 
 section .data
-
+	
 section .text
-global _start
 extern print_str
 extern unsigned_int_to_ascii
+extern init_alloc
+extern alloc
 
+global _start
 _start:
+	; get terminal dimensions
+	mov rax, SYS_IOCTL
+	mov rdi, STDOUT
+	mov rsi, TIOCGWINSZ
+	lea rdx, [multipurpuse_buf]
+	syscall
 	
+	mov word ax, [multipurpuse_buf]; rows are stored at offset 0
+	mov [term_rows], ax
+
+	mov word ax, [multipurpuse_buf+2]; cols are stored at offset 2
+	mov [term_cols], ax
+
+	; handle args
+	pop rcx; get argc (number of arguments)
+	cmp rcx, 1 
+	jle .no_arguments_provided
+	; TODO hanndle arguments
+	.no_arguments_provided:
+
+	call init_alloc
+
+	mov ax, [term_rows]
+	dec ax; one less than terminal size for statusbar
+	mov cx, [term_cols]
+	mul rcx
+	mov rdi, rax
+	call alloc
+	mov r15, rax; stores pointer to gameboard array
+
+
+
+	mov rax, SYS_EXIT
+    	mov rdi, 0             ; return code
+    	syscall
+
+	
+
