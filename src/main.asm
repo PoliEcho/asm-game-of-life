@@ -2,16 +2,18 @@
 
 section .bss
 	multipurpuse_buf: RESB 8
-
+	
+	global term_rows
 	term_rows: RESW 1
+	global term_cols
 	term_cols: RESW 1
-
+	
+	global gameboard_ptr
 	gameboard_ptr: RESQ 1
 
 	extern cursor_rows
 	extern cursor_cols
 
-section .data
 	
 section .text
 extern print_str

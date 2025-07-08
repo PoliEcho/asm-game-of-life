@@ -7,6 +7,11 @@ LD_FLAGS := --strip-all
 DEBUG_LD_FLAGS := -g
 DEBUG_NASM_FLAGS := -g -F dwarf
 
+# check for avx2 support
+ifeq ($(shell grep -o 'avx2[^ ]*' /proc/cpuinfo | head -n 1),avx2)
+    NASM_FLAGS += -DAVX2
+endif
+
 
 SRC_PATH := src
 OBJ_PATH := build/obj
