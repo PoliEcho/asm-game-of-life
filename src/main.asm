@@ -21,6 +21,9 @@ extern unsigned_int_to_ascii
 extern init_alloc
 extern alloc
 
+extern init_gameboard
+extern print_game_ui
+
 global _start
 _start:
 	; get terminal dimensions
@@ -45,12 +48,20 @@ _start:
 
 	call init_alloc
 
+	xor rax, rax
+	xor rcx, rcx
+
 	mov ax, [term_rows]
 	mov cx, [term_cols]
 	mul rcx
 	mov rdi, rax
+	inc rdi; addition byte for NULL BYTE
 	call alloc
 	mov [gameboard_ptr], rax; stores pointer to gameboard array
+	call init_gameboard
+
+	call print_game_ui	
+
 
 
 

@@ -64,7 +64,7 @@ global string_copy
 string_copy:; takes pointer to destination in rdi and pointer to source in rsi
 	
 	xor rax, rax
-
+	xor rcx, rcx
 	.copy_next_byte:
 	mov byte cl, [rsi+rax]
 	test cl, cl
@@ -84,17 +84,20 @@ memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 
 	mov rax, rdi
 	and rax, 0xF; offset is stored in rax
+
+	mov r11, 0x0101010101010101; to extend across whoule register
+	movzx rsi, sil
+	imul r11, rsi; to extend across whoule register
+
 	test al, al; check if resault is 0
 	jz .addr_is_16_Byte_alligned
+	mov rax, r11
+
 	mov r8b, 16
 	sub r8b, al; now offset to first higher 16 byte alligned address is stored in r8
 	sub rdx, r8; we will write these bytes now
 	
-	movzx rax, sil
-	imul rax, 0x01010101; to extend across whoule register
-	shl rax, 32; to extend across whoule register
-
-	;add rdi, rdx
+		;add rdi, rdx
 	; we know that rdi has initial address and rdx offset so well fill just add to it
 	mov rcx, 1; we will allwais copy only once
 	
@@ -123,10 +126,10 @@ memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 	.addr_is_16_Byte_alligned:
 	shr rdx, 4; set it to how many 128bit(16Byte) chunk we need 
 	
-	%ifdef AVX2
-		vpbroadcastq xmm8, rax
+	%ifdef AVX512
+		vpbroadcastq xmm8, r11
 	%else
-		movq xmm8, rax
+		movq xmm8, r11
 		shufpd xmm8, xmm8, 0x00
 	%endif
 

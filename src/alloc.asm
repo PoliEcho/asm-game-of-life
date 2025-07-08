@@ -16,8 +16,8 @@ global alloc
 alloc:; Takes lenght of data in rdi and returns pointer in rax
 	mov rax, SYS_BRK
 	mov qword rcx, [brk_pointer]
-	add rdi, rcx; calculate new BRK address
 	push rcx
+	add rdi, rcx; calculate new BRK address
 	syscall
 	mov [brk_pointer], rax
 	pop rax
