@@ -7,7 +7,7 @@ section .text
 global init_alloc
 init_alloc:; initialize allocator, optionaly return brk pointer in rax
 	mov rax, SYS_BRK
-	mov rdi, 0
+	xor rdi, rdi
 	syscall
 	mov [brk_pointer], rax
 	ret
@@ -15,9 +15,10 @@ init_alloc:; initialize allocator, optionaly return brk pointer in rax
 global alloc
 alloc:; Takes lenght of data in rdi and returns pointer in rax
 	mov rax, SYS_BRK
-	mov rcx, [brk_pointer]
+	mov qword rcx, [brk_pointer]
+	add rdi, rcx; calculate new BRK address
 	push rcx
-	syscall; size already in rdi
+	syscall
 	mov [brk_pointer], rax
 	pop rax
 	ret
