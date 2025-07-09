@@ -80,8 +80,6 @@ global memory_set:
 memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 	; first check if value is 16 byte alligned
 
-	xor r8, r8
-
 	mov r9, rdi; move destination to r9
 
 	mov r11, 0x0101010101010101; to extend across whoule register
@@ -90,7 +88,7 @@ memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 
 	cmp rdx, 16
 	jnl .write_16_or_more_bytes 
-	mov r8b, dl
+	mov cl, dl
 	jmp .write_less_than_16_bytes
 	.write_16_or_more_bytes:
 	mov rax, rdi; move destination to rax
@@ -101,46 +99,20 @@ memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 	jz .addr_is_16_Byte_alligned
 	
 
-	mov r8b, 16
-	sub r8b, al; now offset to first higher 16 byte alligned address is stored in r8
+	mov cl, 16
+	sub cl, al; now offset to first higher 16 byte alligned address is stored in r8
 
 	mov rax, r11
 
 	.write_less_than_16_bytes:
-	sub rdx, r8; we will write these bytes now
+	sub rdx, rcx; we will write these bytes now
 	
-		;add rdi, rdx
-	; we know that rdi has initial address and rdx offset so well fill just add to it
-	mov rcx, 1; we will allwais copy only once
-	
-
-	cmp r8b, 8
-	jl .check_dword
-	rep stosq
-	sub r8b, 8
-
-	.check_dword:
-	cmp r8b, 4
-	jl .check_word
-	rep stosd
-	sub r8b, 4
-
-	.check_word:
-	cmp r8b, 2
-	jl .check_byte
-	rep stosw
-	sub r8b, 2
-
-	.check_byte:
-	test r8b, r8b; check if offset is 1 or 0
-	jz .addr_is_16_Byte_alligned
 	rep stosb
-	dec r8b	
 
 	.addr_is_16_Byte_alligned:
-	mov rcx, rdx
-	shr rcx, 4; set it to how many 128bit(16Byte) chunk we need 
-	test rcx, rcx; check if we need to write aditional 16 bytes at all
+	mov r10, rdx
+	shr r10, 4; set it to how many 128bit(16Byte) chunk we need 
+	test r10, r10; check if we need to write aditional 16 bytes at all
 	jz .function_exit
 		
 	%ifdef AVX512
@@ -162,7 +134,7 @@ memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 
 	test rdx, rdx; test if rdx is 0
 	jz .true_function_exit
-	mov r8b, dl
+	mov cl, dl
 	jmp .write_less_than_16_bytes
 
 	.true_function_exit:
