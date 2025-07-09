@@ -1,5 +1,7 @@
 %include "symbols.asm"
 
+
+
 section .bss
 	multipurpuse_buf: RESB 8
 	
@@ -11,10 +13,16 @@ section .bss
 	global gameboard_ptr
 	gameboard_ptr: RESQ 1
 
+	global gameboard_size
+	gameboard_size: RESQ 1
+
 	extern cursor_rows
 	extern cursor_cols
 
 	
+section .rodata
+	extern resetLen
+
 section .text
 extern print_str
 extern unsigned_int_to_ascii
@@ -55,7 +63,10 @@ _start:
 	mov cx, [term_cols]
 	mul rcx
 	mov rdi, rax
+	mov qword [gameboard_size], rax
 	inc rdi; addition byte for NULL BYTE
+	lea rax, [resetLen]
+	add rdi, rax
 	call alloc
 	mov [gameboard_ptr], rax; stores pointer to gameboard array
 	call init_gameboard

@@ -6,16 +6,20 @@ section .bss
 	extern term_rows
 	extern term_cols
 
+	extern gameboard_size
+
 	simulation_running: RESB 1
 
 section .rodata 
 	clear: 		db ESC_CHAR, "[2J", 0
 	reset:		db ESC_CHAR, "[0m", 0
+	resetLen:	equ $-reset-1
+	global resetLen
 
 	home_cursor:	db ESC_CHAR, "[H", 0
 
 	statusbar:	db ESC_CHAR, "[100m", "Use arrow keys to move cursor, enter to invert cell h/j to change simulation speed, p to       simulation", 0
-	%define START_STOP_position $-statusbar-16
+	START_STOP_pos: equ $-statusbar-16
 	
 	start_str:	db "START", 0
 	stop_str:	db "STOP", 0
@@ -30,36 +34,29 @@ init_gameboard:
 	xor rax, rax
 	xor rcx, rcx
 
-	mov ax, [term_cols]
-	mov cx, [term_rows]
-	mul rcx
 	
-	push rax
-	push rcx
 	mov rdi, [gameboard_ptr]
+	push rdi
 	mov rsi, 0x20; set rsi to SPACE character
-	mov rdx, rax
+	mov rdx, [gameboard_size]
+	push rdx
 	call memory_set
-	pop rcx
-	pop rax
+	
 
-	mov rdx, rax
-	sub rdx, rcx; get pointer to start of last line
-	
-	mov rdi, [gameboard_ptr]
-	add rdi, rax; get end of gameboard 
-	
-	sub rdi, 4; get space for reset sequence
-	
+	pop rdx
+	pop rdi
+	add rdi, rdx; get pointer to last char on screen
+	push rdi
+	inc rdi; so there is not empty chagacter at the end of screen
 	lea rsi, [reset]
 
-	push rdx
 	call string_copy
 
 
-	pop rdx
-	mov rdi, rdx
-	add rdi, [gameboard_ptr]
+	pop rdi
+	xor rax, rax
+	mov ax, [term_cols]
+	sub rdi, rax
 	lea rsi, [statusbar]
 	call string_copy
 
