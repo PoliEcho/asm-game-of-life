@@ -67,6 +67,7 @@ _start:
 	inc rdi; addition byte for NULL BYTE
 	lea rax, [resetLen]
 	add rdi, rax
+	add rdi, ESC_chars_compensation_Len
 	call alloc
 	mov [gameboard_ptr], rax; stores pointer to gameboard array
 	call init_gameboard
