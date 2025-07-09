@@ -88,7 +88,7 @@ memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 
 	cmp rdx, 16
 	jnl .write_16_or_more_bytes 
-	mov cl, dl
+	mov rcx, rdx 
 	jmp .write_less_than_16_bytes
 	.write_16_or_more_bytes:
 	mov rax, rdi; move destination to rax
@@ -101,10 +101,11 @@ memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 
 	mov cl, 16
 	sub cl, al; now offset to first higher 16 byte alligned address is stored in r8
-
-	mov rax, r11
+	movzx rcx, cl; remove ani posible garbage
+	
 
 	.write_less_than_16_bytes:
+	mov rax, r11
 	sub rdx, rcx; we will write these bytes now
 	
 	rep stosb

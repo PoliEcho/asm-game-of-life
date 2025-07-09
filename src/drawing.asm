@@ -43,7 +43,7 @@ init_gameboard:
 	mov rsi, 0x20; set rsi to SPACE character
 	mov rdx, [gameboard_size]
 	push rdx
-	add rdx, ESC_chars_compensation_Len+2; I dont know how this work but it works so i wont touch it
+	add rdx, ESC_chars_compensation_Len; I dont know how this work but it works so i wont touch it
 	call memory_set
 	
 
@@ -51,14 +51,10 @@ init_gameboard:
 	pop rdi
 	add rdi, rdx; get pointer to last char on screen
 	push rdi
-	add rdi, 9; I dont know how this work but it works so i wont touch it
-	push rdi
+	add rdi, ESC_chars_compensation_Len
 	lea rsi, [reset]
 
 	call string_copy
-	pop rax
-	mov byte [rax+resetLen], 0; I dont know how this work but it works so i wont touch it
-
 	pop rdi
 	xor rax, rax
 	mov ax, [term_cols]
