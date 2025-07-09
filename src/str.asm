@@ -80,21 +80,33 @@ global memory_set:
 memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 	; first check if value is 16 byte alligned
 
-	mov r9, rdi
+	xor r8, r8
 
-	mov rax, rdi
-	and rax, 0xF; offset is stored in rax
+	mov r9, rdi; move destination to r9
 
 	mov r11, 0x0101010101010101; to extend across whoule register
 	movzx rsi, sil
 	imul r11, rsi; to extend across whoule register
 
+	cmp rdx, 16
+	jnl .write_16_or_more_bytes 
+	mov r8b, dl
+	jmp .write_less_than_16_bytes
+	.write_16_or_more_bytes:
+	mov rax, rdi; move destination to rax
+	and rax, 0xF; offset is stored in rax
+
+	
 	test al, al; check if resault is 0
 	jz .addr_is_16_Byte_alligned
-	mov rax, r11
+	
 
 	mov r8b, 16
 	sub r8b, al; now offset to first higher 16 byte alligned address is stored in r8
+
+	mov rax, r11
+
+	.write_less_than_16_bytes:
 	sub rdx, r8; we will write these bytes now
 	
 		;add rdi, rdx
@@ -102,30 +114,35 @@ memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 	mov rcx, 1; we will allwais copy only once
 	
 
-	.check_qword:; check if offset is more than qword
 	cmp r8b, 8
 	jl .check_dword
 	rep stosq
+	sub r8b, 8
 
 	.check_dword:
 	cmp r8b, 4
 	jl .check_word
 	rep stosd
+	sub r8b, 4
 
 	.check_word:
 	cmp r8b, 2
 	jl .check_byte
 	rep stosw
+	sub r8b, 2
 
 	.check_byte:
 	test r8b, r8b; check if offset is 1 or 0
 	jz .addr_is_16_Byte_alligned
 	rep stosb
-	
-	
+	dec r8b	
+
 	.addr_is_16_Byte_alligned:
-	shr rdx, 4; set it to how many 128bit(16Byte) chunk we need 
-	
+	mov rcx, rdx
+	shr rcx, 4; set it to how many 128bit(16Byte) chunk we need 
+	test rcx, rcx; check if we need to write aditional 16 bytes at all
+	jz .function_exit
+		
 	%ifdef AVX512
 		vpbroadcastq xmm8, r11
 	%else
@@ -136,10 +153,18 @@ memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 	.move_16_bytes:
 	movdqa [rdi], xmm8
 	add rdi, 16
-	dec rdx
+	sub rdx, 16
 
-	test rdx,rdx; test if rdx is zero 
-	jnz .move_16_bytes
-	
+	cmp rdx, 16; test if rdx is less than 16
+	jge .move_16_bytes
+
+	.function_exit:
+
+	test rdx, rdx; test if rdx is 0
+	jz .true_function_exit
+	mov r8b, dl
+	jmp .write_less_than_16_bytes
+
+	.true_function_exit:
 	mov rax, r9; return pointer to memory area same as memset in libc
 	ret	
