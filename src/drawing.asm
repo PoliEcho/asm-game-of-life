@@ -13,6 +13,8 @@ section .bss
 	global simulation_running
 	simulation_running: RESB 1
 
+	next_frame_ptr: RESQ 1
+
 section .rodata 
 	clear: 		db ESC_CHAR, "[2J", 0
 	reset:		db ESC_CHAR, "[0m", 0
@@ -32,6 +34,7 @@ section .text
 extern print_str
 extern string_copy
 extern memory_set
+extern alloc
 
 global init_gameboard
 init_gameboard:
@@ -51,6 +54,7 @@ init_gameboard:
 	pop rdx
 	pop rdi
 	add rdi, rdx; get pointer to last char on screen
+	push rdx
 	push rdi
 	add rdi, ESC_chars_compensation_Len
 	lea rsi, [reset]
@@ -63,6 +67,9 @@ init_gameboard:
 	lea rsi, [statusbar]
 	call string_copy
 
+	pop rdi 
+	call alloc
+	mov [next_frame_ptr], rax
 	ret
 	
 global print_game_ui
@@ -90,4 +97,71 @@ print_game_ui:
 	call print_str
 	
 	
+	ret
+
+%macro check_if_hashtag 1
+	cmp r8, %1
+	jl +7
+	cmp r9, %1 
+	ja +5
+	mov r11b, [%1]
+	cmp r11b, '#' 
+	jne +2 
+	inc dl
+%endmacro
+
+global step_simulation:
+step_simultion:
+	mov rdi, [next_frame_ptr]; destination
+	mov rsi, [gameboard_ptr]; source 
+	mov rcx, [gameboard_size]; number of iterations
+
+	mov r8, rsi; store lowest address posible so we are not checking out of bounds
+	mov r9, rsi
+	add r9, rcx; store higest address posible so we are not checking out of bounds
+
+	mov r10, [term_cols]
+	;mov r11, [term_rows] this register has been confiscated since i cannot use ah because of error: cannot use high byte register in rex instruction
+
+	xor rax, rax; this shouldn't be needed but just to be sure
+	xor r11, r11
+	xor rdx, rdx; we will use dl as # counter 
+	.for_every_column_on_gameboard:
+	mov al, [rdi]; NOTE to self if i need extra register i can shift this to ah and free up r11
+	
+	
+	inc rdi
+	check_if_hashtag rdi
+	dec rdi
+
+	check_if_hashtag rdi-1
+
+
+	add rdi, r10
+	
+	check_if_hashtag rdi
+
+	inc rdi
+	check_if_hashtag rdi
+	dec rdi
+
+	check_if_hashtag rdi-1
+
+	sub rdi, r10
+
+
+	sub rdi, r10	
+	check_if_hashtag rdi
+
+	inc rdi
+	check_if_hashtag rdi
+	dec rdi
+
+	check_if_hashtag rdi-1
+
+	add rdi, r10
+
+
+	; TODO create jump table
+
 	ret

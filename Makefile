@@ -1,7 +1,7 @@
 NASM = nasm
 LD = ld
 
-NASM_FLAGS := -felf64 -Isrc -Ox -Ov -w+all
+NASM_FLAGS := -felf64 -Isrc -Ox -Ov -w+all -w-reloc-abs-dword -w-reloc-rel-dword
 LD_FLAGS := --strip-all 
 
 DEBUG_LD_FLAGS := -g

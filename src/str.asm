@@ -141,3 +141,65 @@ memory_set:; takes  destination in rdi, byte in sil and lenght in rdx
 	.true_function_exit:
 	mov rax, r9; return pointer to memory area same as memset in libc
 	ret	
+
+
+
+
+
+
+
+global memory_copy:
+memory_copy:; takes  destination in rdi, source in rsi and lenght in rdx
+	; first check if value is 16 byte alligned
+
+	mov r9, rdi
+
+	cmp rdx, 16
+	jnl .write_16_or_more_bytes 
+	mov rcx, rdx 
+	jmp .write_less_than_16_bytes
+	.write_16_or_more_bytes:
+	mov rax, rdi; move destination to rax
+	and rax, 0xF; offset is stored in rax
+
+	
+	test al, al; check if resault is 0
+	jz .addr_is_16_Byte_alligned
+	
+
+	mov cl, 16
+	sub cl, al; now offset to first higher 16 byte alligned address is stored in r8
+	movzx rcx, cl; remove ani posible garbage
+	
+
+	.write_less_than_16_bytes:
+	sub rdx, rcx; we will write these bytes now
+	
+	rep movsb
+
+	.addr_is_16_Byte_alligned:
+	mov r10, rdx
+	shr r10, 4; set it to how many 128bit(16Byte) chunk we need 
+	test r10, r10; check if we need to write aditional 16 bytes at all
+	jz .function_exit
+		
+	.move_16_bytes:
+	movdqa xmm8, [rsi]
+	movdqa [rdi], xmm8
+	add rdi, 16
+	add rsi, 16
+	sub rdx, 16
+
+	cmp rdx, 16; test if rdx is less than 16
+	jge .move_16_bytes
+
+	.function_exit:
+
+	test rdx, rdx; test if rdx is 0
+	jz .true_function_exit
+	movzx rcx, dl
+	jmp .write_less_than_16_bytes
+
+	.true_function_exit:
+	mov rax, r9; return pointer to memory area same as memset in libc
+	ret	
