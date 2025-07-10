@@ -9,7 +9,8 @@ section .bss
 	extern term_cols
 
 	extern gameboard_size
-
+	
+	global simulation_running
 	simulation_running: RESB 1
 
 section .rodata 
@@ -20,8 +21,8 @@ section .rodata
 
 	home_cursor:	db ESC_CHAR, "[H", 0
 
-	statusbar:	db ESC_CHAR, "[30;100m", "Use arrow keys to move cursor, enter to invert cell h/j to change simulation speed, p to       simulation", 0
-	START_STOP_pos: equ $-statusbar-16
+	statusbar:	db ESC_CHAR, "[30;100m", "Use arrow keys to move cursor, enter to invert cell j/k to change simulation speed, p to       simulation", 0
+	START_STOP_pos: equ $-statusbar-17
 	
 	
 	start_str:	db "START", 0
@@ -68,8 +69,24 @@ global print_game_ui
 print_game_ui:
 	lea rdi, [home_cursor]
 	call print_str
-	
+
 	mov qword rdi, [gameboard_ptr]
+	push rdi
+	add rdi, [gameboard_size]
+	sub di, [term_cols]
+	add rdi, START_STOP_pos
+	
+	mov cl, [simulation_running]
+	test cl,cl; test if simulation is running 
+	jz .simulation_not_running
+	lea rsi, [stop_str]
+	jmp .end_simulation_running_check
+	.simulation_not_running:
+	lea rsi, [start_str]
+	.end_simulation_running_check:
+	call string_copy
+
+	pop rdi
 	call print_str
 	
 	

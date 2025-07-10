@@ -3,6 +3,7 @@
 
 
 section .bss
+	global multipurpuse_buf
 	multipurpuse_buf: RESB 8
 	
 	global term_rows
@@ -71,6 +72,13 @@ _start:
 	call alloc
 	mov [gameboard_ptr], rax; stores pointer to gameboard array
 	call init_gameboard
+
+	; make stdin non-blocking in case polling somehow fails, or am i stupid
+	mov rax, SYS_FCNTL
+	mov rdi, STDIN
+	mov rsi, F_SETFL
+	mov rdx, O_NONBLOCK
+	syscall
 
 	call print_game_ui	
 
