@@ -4,7 +4,7 @@
 
 section .bss
 	global multipurpuse_buf
-	multipurpuse_buf: RESB 8
+	multipurpuse_buf: RESB 16
 	
 	global term_rows
 	term_rows: RESW 1
