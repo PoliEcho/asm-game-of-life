@@ -5,6 +5,8 @@ jobs:
   build:
     runs-on: arch
     steps:
+      - name: fix package cache
+        run: rm /var/cache/pacman/pkg/*
       - name: get dependencies
         run: pacman -Sy nodejs make nasm --needed --noconfirm
 
