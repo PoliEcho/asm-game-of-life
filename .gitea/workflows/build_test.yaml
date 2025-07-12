@@ -6,7 +6,7 @@ jobs:
     runs-on: arch
     steps:
       - name: get dependencies
-        run: pacman -Sy nodejs make nasm--needed --noconfirm
+        run: pacman -Sy nodejs make nasm --needed --noconfirm
 
       - name: Checkout code
         uses: actions/checkout@v4
