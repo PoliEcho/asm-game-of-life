@@ -5,6 +5,7 @@ SYS_WRITE 	equ 1
 SYS_BRK		equ 12
 SYS_FCNTL	equ 72
 SYS_POLL	equ 7
+SYS_NANOSLEEP	equ 35
 
 STDIN		equ 0
 STDOUT		equ 1

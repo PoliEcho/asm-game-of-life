@@ -16,13 +16,14 @@ section .data
 	cursor_rows: dw 1
 	cursor_cols: dw 1
 section .rodata
+	extern reset
 
 	cursor_up: db ESC_CHAR, "[1A", 0
 	cursor_down: db ESC_CHAR, "[1B", 0
 	cursor_right: db ESC_CHAR, "[1C", 0
 	cursor_left: db ESC_CHAR, "[1D", 0
 
-	
+	cursor_color: db ESC_CHAR, "[45m", 0
 
 	arrow_switch_statement:
 		dq handle_user_input.arrow_up
@@ -36,39 +37,22 @@ extern print_str
 extern step_simulation
 extern unsigned_int_to_ascii
 extern print_game_ui
+extern string_copy
 
 global handle_user_input
 handle_user_input:; main loop of the program
 	push r12
+	push r13
+	
 
 	lea r12, [multipurpuse_buf]
 
 	.main_loop:
+	xor r13, r13
 
 	; put the cursor where it should be 
-	mov rdi, r12; multipurpuse_buf pointer is in r12
-	mov word [rdi], 0x5B1B; will store ESC_CHAR, '[' they have to be in reverse order here due to little endian
-	add rdi, 2
-	push rdi
-	xor rsi, rsi
-	mov si, [cursor_rows]
-	call unsigned_int_to_ascii
-	pop rdi
-	add rdi, rax; add lenght of string to pointer 
-	mov byte [rdi], ';'
-	inc rdi
-	push rdi
-	mov si, [cursor_cols]
-	call unsigned_int_to_ascii
-	pop rdi
-	add rdi, rax
-	mov byte [rdi], 'H'
-	inc rdi
-	mov byte [rdi], 0; null terminate
-
-	mov rdi, r12; multipurpuse_buf pointer is in r12
-	call print_str
-
+	call print_cursor
+	
 	
 
 	xor rax, rax
@@ -79,7 +63,7 @@ handle_user_input:; main loop of the program
 	mov word [r12+4], POLLIN
 	mov rdi, r12
 	mov rsi, 1; only one file descriptor is provided
-	mov rdx, 500; no timeout. maybe use this for final sleep but run if user inputs something TODO
+	mov rdx, 50; no timeout. maybe use this for final sleep but run if user inputs something TODO
 	syscall
 
 	test rax, rax; SYS_POLL returns 0 when no change happens within timeout
@@ -119,41 +103,41 @@ handle_user_input:; main loop of the program
 	dec word [cursor_rows]
 	jnz .move_cursor_up
 	inc word [cursor_rows]
-	jmp .no_input
+	jmp .end_input_handling
 	.move_cursor_up:
 	lea rdi, [cursor_up]
 	call print_str
-	jmp .no_input
+	jmp .end_input_handling
 
 	.arrow_down:
 	mov r8w, [cursor_rows]
 	inc r8w
 	cmp word r8w, r9w
-	ja .no_input
+	ja .end_input_handling
 	mov word [cursor_rows], r8w
 	lea rdi, [cursor_down]
 	call print_str
-	jmp .no_input
+	jmp .end_input_handling
 
 	.arrow_right:
  	mov r8w, [cursor_cols]
 	inc r8w
 	cmp word r8w, r10w
-	ja .no_input
+	ja .end_input_handling
 	mov word [cursor_cols], r8w
 	lea rdi, [cursor_right]
 	call print_str
-	jmp .no_input
+	jmp .end_input_handling
 
 	.arrow_left:
 	dec word [cursor_cols]
 	jnz .move_cursor_left 
 	inc word [cursor_cols]
-	jmp .no_input
+	jmp .end_input_handling
 	.move_cursor_left:
 	lea rdi, [cursor_left]
 	call print_str
-	jmp .no_input
+	jmp .end_input_handling
 
 	.handle_single_byte_chars:
 
@@ -176,12 +160,12 @@ handle_user_input:; main loop of the program
 	je .hashtag_present
 
 	mov byte [rdi], '#'
-	jmp .no_input
+	jmp .end_input_handling
 
 	.hashtag_present:
 
 	mov byte [rdi], ' '
-	jmp .no_input
+	jmp .end_input_handling
 
 	.check_p:
 	cmp al, 'p'
@@ -189,7 +173,7 @@ handle_user_input:; main loop of the program
 
 	xor byte [simulation_running], 0x01; switch simulation on or off
 
-	jmp .no_input
+	jmp .end_input_handling	
 
 	.check_j:
 	cmp al, 'j'
@@ -197,7 +181,7 @@ handle_user_input:; main loop of the program
 
 	; TODO implement simulation speed
 
-	jmp .no_input
+	jmp .end_input_handling	
 
 	.check_k:
 	cmp al, 'k'
@@ -207,20 +191,37 @@ handle_user_input:; main loop of the program
 
 	.check_q:
 	cmp al, 'q'
-	jne .no_input
-	pop r12
+	jne .end_input_handling	
+	jmp .function_exit
 	ret; exit if q pressed
 
+	.end_input_handling:
+	mov r13b, 1
 	.no_input:
 
 	mov al, [simulation_running]
 	test al, al
 	jz .dont_step
 	call step_simulation
+	mov r13b, 1
 	.dont_step:
+	
+	%ifdef COMMENT
+	lea rdi, [multipurpuse_buf]
+	mov qword [multipurpuse_buf], 0
+	mov qword [multipurpuse_buf+8], 50000000; 50ms
+	mov rax, SYS_NANOSLEEP
+	mov rsi, 0 
+	syscall
+	%endif
+
+	test r13b, r13b
+	jz .main_loop
 	call print_game_ui
 	jmp .main_loop
 
+.function_exit:
+	pop r13
 	pop r12
 	ret
 
@@ -289,4 +290,77 @@ reset_terminal:
 	syscall 
 	ret
 	
+print_cursor:
+	push r12
+	push r13
+	lea r12, [multipurpuse_buf]
+	mov rdi, r12
+	mov word [rdi], 0x5B1B; will store ESC_CHAR, '[' they have to be in reverse order here due to little endian
+	add rdi, 2
+	push rdi
+	xor rsi, rsi
+	mov si, [cursor_rows]
+	call unsigned_int_to_ascii
+	pop rdi
+	add rdi, rax; add lenght of string to pointer 
+	mov byte [rdi], ';'
+	inc rdi
+	push rdi
+	mov si, [cursor_cols]
+	call unsigned_int_to_ascii
+	pop rdi
+	add rdi, rax
+	mov byte [rdi], 'H'
+	inc rdi
+	mov byte [rdi], 0; null terminate
+
+	mov rdi, r12
+	call print_str
+
+	; write there real cursor
+	xor r13, r13
+	mov rdi, r12
+	lea rsi, [cursor_color]
+	call string_copy
+	mov rdi, r12
+	add r13, rax
+	add rdi, r13
+
+	xor rax, rax
+
+	mov ax, [cursor_rows]
+	dec ax
+	mul word [term_cols]; get index of character
+	add ax, [cursor_cols]
+	dec ax
+
+	xor rsi, rsi
+
+	add rax, [gameboard_ptr]
+	mov sil, [rax]; now we got the character in si
+	mov byte [rdi], sil
+	inc rdi
+	inc r13
+
+	lea rsi, [reset]
+	call string_copy
+	mov rdi, r12
+	add r13, rax
+	add rdi, r13
+
+	lea rsi, [cursor_left]
+	call string_copy
+	mov rdi, r12
+	add r13, rax
+	add rdi, r13
+	
+	inc rdi
+	mov byte [rdi], 0; null terminate
+
+	mov rdi, r12
+	call print_str
+	
+	pop r13
+	pop r12
+	ret
 	

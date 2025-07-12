@@ -61,7 +61,7 @@ unsigned_int_to_ascii: ; takes pointer to array in rdi and value stored in rsi D
     ret
 
 global string_copy
-string_copy:; takes pointer to destination in rdi and pointer to source in rsi
+string_copy:; takes pointer to destination in rdi and pointer to source in rsi and return lenght in rax
 	
 	xor rax, rax
 	xor rcx, rcx

@@ -24,6 +24,9 @@ section .bss
 section .rodata
 	extern resetLen
 
+	hide_cursor: db ESC_CHAR, "[?25l", 0
+	show_cursor: db ESC_CHAR, "[?25h", 0
+
 section .text
 extern print_str
 extern unsigned_int_to_ascii
@@ -85,6 +88,9 @@ _start:
 	mov rdx, O_NONBLOCK
 	syscall
 
+	lea rdi, [hide_cursor]
+	call print_str
+
 	call print_game_ui	
 
 	call disable_canonical_mode_and_echo
@@ -93,7 +99,8 @@ _start:
 
 	call reset_terminal
 
-
+	lea rdi, [show_cursor]
+	call print_str
 
 	mov rax, SYS_EXIT
     	mov rdi, 0             ; return code

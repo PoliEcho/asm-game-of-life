@@ -17,6 +17,7 @@ section .bss
 
 section .rodata 
 	clear: 		db ESC_CHAR, "[2J", 0
+	global reset
 	reset:		db ESC_CHAR, "[0m", 0
 	resetLen:	equ $-reset-1
 	global resetLen
