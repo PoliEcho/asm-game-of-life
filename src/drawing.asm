@@ -30,10 +30,23 @@ section .rodata
 	start_str:	db "START", 0
 	stop_str:	db "STOP ", 0
 
+	alive_switch_statement:
+		dq step_simulation.die; 0
+		dq step_simulation.die; 1
+		dq step_simulation.end_check; 2
+		dq step_simulation.end_check; 3
+		dq step_simulation.die; 4
+		dq step_simulation.die; 5
+		dq step_simulation.die; 6
+		dq step_simulation.die; 7
+		dq step_simulation.die; 8
+
+
 section .text 
 extern print_str
 extern string_copy
 extern memory_set
+extern memory_copy
 extern alloc
 
 global init_gameboard
@@ -99,19 +112,20 @@ print_game_ui:
 	
 	ret
 
-%macro check_if_hashtag 1
+%macro check_if_hashtag 2
 	cmp r8, %1
-	jl +7
+	jl .no_count_%2
 	cmp r9, %1 
-	ja +5
+	ja .no_count_%2
 	mov r11b, [%1]
 	cmp r11b, '#' 
-	jne +2 
+	jne .no_count_%2
 	inc dl
+	.no_count_%2:
 %endmacro
 
 global step_simulation:
-step_simultion:
+step_simulation:
 	mov rdi, [next_frame_ptr]; destination
 	mov rsi, [gameboard_ptr]; source 
 	mov rcx, [gameboard_size]; number of iterations
@@ -120,48 +134,73 @@ step_simultion:
 	mov r9, rsi
 	add r9, rcx; store higest address posible so we are not checking out of bounds
 
-	mov r10, [term_cols]
+	mov r10w, [term_cols]
 	;mov r11, [term_rows] this register has been confiscated since i cannot use ah because of error: cannot use high byte register in rex instruction
 
 	xor rax, rax; this shouldn't be needed but just to be sure
 	xor r11, r11
 	xor rdx, rdx; we will use dl as # counter 
 	.for_every_column_on_gameboard:
-	mov al, [rdi]; NOTE to self if i need extra register i can shift this to ah and free up r11
+	xor dl, dl
+	mov al, [rsi]; NOTE to self if i need extra register i can shift this to ah and free up r11
 	
 	
-	inc rdi
-	check_if_hashtag rdi
-	dec rdi
+	inc rsi
+	check_if_hashtag rsi, 1
+	dec rsi
 
-	check_if_hashtag rdi-1
+	check_if_hashtag rsi-1, 2
 
 
-	add rdi, r10
+	add rsi, r10
 	
-	check_if_hashtag rdi
+	check_if_hashtag rsi, 3
 
+	inc rsi
+	check_if_hashtag rsi, 4
+	dec rsi
+
+	check_if_hashtag rsi-1, 5
+
+	sub rsi, r10
+
+
+	sub rsi, r10	
+	check_if_hashtag rsi, 6
+
+	inc rsi
+	check_if_hashtag rsi, 7
+	dec rsi
+
+	check_if_hashtag rsi-1, 8
+
+	add rsi, r10
+
+	cmp al, '#'
+	jne .dead_cell
+
+	jmp [alive_switch_statement+(rdx*8)]
+
+	.die:
+	mov byte [rdi], 0x20; SPACE
+	jmp .end_check
+
+	.dead_cell:
+	cmp dl, 3 
+	jne .end_check
+	mov byte [rdi], '#'
+
+	.end_check:
+	dec rcx
 	inc rdi
-	check_if_hashtag rdi
-	dec rdi
+	inc rsi
+	test rcx, rcx
+	jnz .for_every_column_on_gameboard
 
-	check_if_hashtag rdi-1
+	mov rsi, [next_frame_ptr]; destination
+	mov rdi, [gameboard_ptr]; source 
+	mov rdx, [gameboard_size]; number of iterations
 
-	sub rdi, r10
-
-
-	sub rdi, r10	
-	check_if_hashtag rdi
-
-	inc rdi
-	check_if_hashtag rdi
-	dec rdi
-
-	check_if_hashtag rdi-1
-
-	add rdi, r10
-
-
-	; TODO create jump table
+	call memory_copy
 
 	ret

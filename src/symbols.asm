@@ -10,9 +10,16 @@ STDIN		equ 0
 STDOUT		equ 1
 
 TIOCGWINSZ	equ 0x5413
-POLLIN		equ 1 
+TCGETS		equ 0x5401
+TCSETS		equ 0x5402
 F_SETFL		equ 4 
 O_NONBLOCK	equ 2048
+POLLIN		equ 0x0100; compensate for litle endian
+
+NOT_ECHO	equ -9
+NOT_ICANON	equ -3
+
+EAGAIN		equ -11
 
 ASCII_ZERO 	equ 48
 ESC_CHAR 	equ 27

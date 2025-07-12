@@ -1,8 +1,8 @@
 %include "symbols.asm"
 
 section .bss
-	cursor_rows: RESW 1; TODO DONT FORGET TO INICIALIZE
-	cursor_cols: RESW 1
+	alignb 16
+	termios: RESZ 1; 60 bytes is needed i use 64 for alligment and it is easier to work with
 
 	extern multipurpuse_buf
 
@@ -12,13 +12,16 @@ section .bss
 	extern gameboard_ptr
 
 	extern simulation_running
-
+section .data 
+	cursor_rows: dw 1
+	cursor_cols: dw 1
 section .rodata
 
 	cursor_up: db ESC_CHAR, "[1A", 0
 	cursor_down: db ESC_CHAR, "[1B", 0
 	cursor_right: db ESC_CHAR, "[1C", 0
 	cursor_left: db ESC_CHAR, "[1D", 0
+
 	
 
 	arrow_switch_statement:
@@ -30,37 +33,79 @@ section .rodata
 section .text
 
 extern print_str
+extern step_simulation
+extern unsigned_int_to_ascii
+extern print_game_ui
 
 global handle_user_input
 handle_user_input:; main loop of the program
+	push r12
+
+	lea r12, [multipurpuse_buf]
 
 	.main_loop:
 
+	; put the cursor where it should be 
+	mov rdi, r12; multipurpuse_buf pointer is in r12
+	mov word [rdi], 0x5B1B; will store ESC_CHAR, '[' they have to be in reverse order here due to little endian
+	add rdi, 2
+	push rdi
+	xor rsi, rsi
+	mov si, [cursor_rows]
+	call unsigned_int_to_ascii
+	pop rdi
+	add rdi, rax; add lenght of string to pointer 
+	mov byte [rdi], ';'
+	inc rdi
+	push rdi
+	mov si, [cursor_cols]
+	call unsigned_int_to_ascii
+	pop rdi
+	add rdi, rax
+	mov byte [rdi], 'H'
+	inc rdi
+	mov byte [rdi], 0; null terminate
+
+	mov rdi, r12; multipurpuse_buf pointer is in r12
+	call print_str
+
+	
+
 	xor rax, rax
-	mov qword [multipurpuse_buf], rax; zeroout the buffer
+	mov qword [r12], rax; zeroout the buffer
 
 	mov rax, SYS_POLL
-	mov rdi, STDIN
+	mov dword [r12], STDIN; create pollfd struct
+	mov word [r12+4], POLLIN
+	mov rdi, r12
 	mov rsi, 1; only one file descriptor is provided
-	mov rdx, 0; no timeout. maybe use this for final sleep but run if user inputs something TODO
+	mov rdx, 500; no timeout. maybe use this for final sleep but run if user inputs something TODO
 	syscall
 
 	test rax, rax; SYS_POLL returns 0 when no change happens within timeout
-	jz .no_input 
+	jz .no_input
+
+	xor rax, rax
+	mov qword [r12], rax; zeroout the buffer
 	
 	mov rax, SYS_READ
 	mov rdi, STDIN
-	lea rsi, [multipurpuse_buf]
+	lea rsi, [r12]
 	mov rdx, 8; size of multipurpuse buffer
 	syscall; read user input
 
-	mov rax, [multipurpuse_buf]
-	shr rax, 5; we need only 3 bytes for this inpus sceame
+	cmp rax, EAGAIN
+	je .no_input
 
-	cmp eax, 0x001B5B44; check if input is more than left arrow
-	ja .handle_single_byte_chars
+	mov rax, [r12]
+	
+	cmp eax, 0x00415B1B; check if input is more than left arrow
+	jl .handle_single_byte_chars
 
-	sub eax, 0x1B5B41
+	bswap eax
+
+	sub eax, 0x1B5B4100
+	shr eax, 8
 	jmp [arrow_switch_statement+(rax*8)]; lets hope this works
 
 	.arrow_up:
@@ -86,17 +131,20 @@ handle_user_input:; main loop of the program
 
 	.handle_single_byte_chars:
 
-	shr eax, 2; get the char to al 
 
 	cmp al, 0xa; NEWLINE (enter key)
 	jne .check_p
 
 	xor rax, rax; zeroout rax
 	mov ax, [cursor_rows]
-	mul dword [term_cols]
-	add rax, [cursor_cols]
+	dec ax
+	mul word [term_cols]
+	mov cx, [cursor_cols]
+	dec cx
+	add ax, cx
 	
-	lea rdi, [gameboard_ptr+rax]
+	mov rdi, [gameboard_ptr]
+	add rdi, rax
 	mov cl, [rdi]
 	cmp cl, '#'
 	je .hashtag_present
@@ -133,9 +181,80 @@ handle_user_input:; main loop of the program
 
 	.no_input:
 
-		
+	mov al, [simulation_running]
+	test al, al
+	jz .dont_step
+	call step_simulation
+	.dont_step:
+	call print_game_ui
 	jmp .main_loop
 
+	pop r12
+	ret
+
+	
+global disable_canonical_mode_and_echo
+disable_canonical_mode_and_echo:
+	
+	mov rax, SYS_IOCTL
+	mov rdi, STDIN
+	mov rsi, TCGETS
+	lea rdx, [termios]
+	syscall 
+
+	; save original termios struct
+	%ifdef AVX2
+		%ifdef AVX512
+			vmovdqa64 zmm0, [termios]
+		%else
+			vmovdqa ymm0, [termios]
+			vmovdqa ymm1, [termios+32]						
+		%endif 
+	%else
+		vmovdqa xmm0, [termios]
+		vmovdqa xmm1, [termios+16]
+		vmovdqa xmm2, [termios+32]
+		vmovdqa xmm3, [termios+64]
+	%endif
+
+	
+	mov eax, [termios+12]; get c_lflag
+	and eax, NOT_ECHO; disable ECHO
+	and eax, NOT_ICANON; disable ICANON
+	mov [termios+12], eax
+
+	mov rax, SYS_IOCTL
+	mov rdi, STDIN
+	mov rsi, TCSETS
+	lea rdx, [termios]
+	syscall 
+
+
+	; load original termios struct
+	%ifdef AVX2
+		%ifdef AVX512
+			vmovdqa64 [termios], zmm0
+		%else
+			vmovdqa [termios], ymm0
+			vmovdqa [termios+32], ymm1						
+		%endif 
+	%else
+		vmovdqa [termios], xmm0
+		vmovdqa [termios+16], xmm1
+		vmovdqa [termios+32], xmm2
+		vmovdqa [termios+64], xmm3
+	%endif
+
+
+	ret
+
+global reset_terminal
+reset_terminal:
+	mov rax, SYS_IOCTL
+	mov rdi, STDIN
+	mov rsi, TCSETS
+	lea rdx, [termios]
+	syscall 
 	ret
 	
 	

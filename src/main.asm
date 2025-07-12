@@ -33,6 +33,11 @@ extern alloc
 extern init_gameboard
 extern print_game_ui
 
+extern handle_user_input
+
+extern disable_canonical_mode_and_echo
+extern reset_terminal
+
 global _start
 _start:
 	; get terminal dimensions
@@ -82,7 +87,11 @@ _start:
 
 	call print_game_ui	
 
+	call disable_canonical_mode_and_echo
 
+	call handle_user_input
+
+	call reset_terminal
 
 
 

@@ -8,6 +8,11 @@ DEBUG_LD_FLAGS := -g
 DEBUG_NASM_FLAGS := -g -F dwarf
 
 # check for avx2 support
+ifeq ($(shell grep -o 'avx2[^ ]*' /proc/cpuinfo | head -n 1),avx512)
+    NASM_FLAGS += -DAVX2
+endif
+
+# check for avx512 support
 ifeq ($(shell grep -o 'avx512[^ ]*' /proc/cpuinfo | head -n 1),avx512)
     NASM_FLAGS += -DAVX512
 endif
