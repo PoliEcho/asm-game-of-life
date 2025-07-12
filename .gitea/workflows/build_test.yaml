@@ -8,7 +8,7 @@ jobs:
       - name: fix package cache
         run: rm -fr /var/cache/pacman/pkg/* && pacman -Syy archlinux-keyring --needed --noconfirm && pacman-key --init && pacman-key --populate archlinux
       - name: get dependencies
-        run: pacman -Sy nodejs make nasm --needed --noconfirm
+        run: pacman -Sy nodejs make nasm binutils --needed --noconfirm
 
       - name: Checkout code
         uses: actions/checkout@v4
