@@ -1,0 +1,15 @@
+name: build_test
+on: [push]
+
+jobs:
+  build:
+    runs-on: arch
+    steps:
+      - name: get dependencies
+        run: pacman -Sy nodejs make nasm--needed --noconfirm
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Build
+        run: make -j$(nproc)
