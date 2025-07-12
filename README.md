@@ -1,2 +1,1 @@
-https://git.pupes.org/PoliEcho/asm-game-of-life/actions?workflow=build_test.yaml
-[![build_test](https://git.pupes.org/PoliEcho/asm-game-of-life/actions/workflows/build_test.yaml/badge.svg)](https://git.pupes.org/PoliEcho/asm-game-of-life/actions?workflow=build_test.yaml)
+[![build test](https://git.pupes.org/PoliEcho/asm-game-of-life/actions/workflows/build_test.yaml/badge.svg)](https://git.pupes.org/PoliEcho/asm-game-of-life/actions?workflow=build_test.yaml)
