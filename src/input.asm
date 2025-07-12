@@ -106,25 +106,51 @@ handle_user_input:; main loop of the program
 
 	sub eax, 0x1B5B4100
 	shr eax, 8
+	cmp al, 3
+	ja .no_input
+
+	mov r9w, [term_rows]
+	dec r9w
+	mov r10w, [term_cols]
+
 	jmp [arrow_switch_statement+(rax*8)]; lets hope this works
 
 	.arrow_up:
 	dec word [cursor_rows]
+	jnz .move_cursor_up
+	inc word [cursor_rows]
+	jmp .no_input
+	.move_cursor_up:
 	lea rdi, [cursor_up]
 	call print_str
 	jmp .no_input
+
 	.arrow_down:
-	inc word [cursor_rows]
+	mov r8w, [cursor_rows]
+	inc r8w
+	cmp word r8w, r9w
+	ja .no_input
+	mov word [cursor_rows], r8w
 	lea rdi, [cursor_down]
 	call print_str
 	jmp .no_input
+
 	.arrow_right:
- 	inc word [cursor_cols]
+ 	mov r8w, [cursor_cols]
+	inc r8w
+	cmp word r8w, r10w
+	ja .no_input
+	mov word [cursor_cols], r8w
 	lea rdi, [cursor_right]
 	call print_str
 	jmp .no_input
+
 	.arrow_left:
 	dec word [cursor_cols]
+	jnz .move_cursor_left 
+	inc word [cursor_cols]
+	jmp .no_input
+	.move_cursor_left:
 	lea rdi, [cursor_left]
 	call print_str
 	jmp .no_input
@@ -175,9 +201,15 @@ handle_user_input:; main loop of the program
 
 	.check_k:
 	cmp al, 'k'
-	jne .no_input
+	jne .check_q
 
 	; TODO implement simulation speed
+
+	.check_q:
+	cmp al, 'q'
+	jne .no_input
+	pop r12
+	ret; exit if q pressed
 
 	.no_input:
 

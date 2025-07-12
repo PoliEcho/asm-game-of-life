@@ -23,7 +23,7 @@ section .rodata
 
 	home_cursor:	db ESC_CHAR, "[H", 0
 
-	statusbar:	db ESC_CHAR, "[30;100m", "Use arrow keys to move cursor, enter to invert cell j/k to change simulation speed, p to       simulation", 0
+	statusbar:	db ESC_CHAR, "[32;100m", "Use arrow keys to move cursor, enter to invert cell j/k to change simulation speed, p to       simulation", 0
 	START_STOP_pos: equ $-statusbar-17
 	
 	
@@ -33,8 +33,8 @@ section .rodata
 	alive_switch_statement:
 		dq step_simulation.die; 0
 		dq step_simulation.die; 1
-		dq step_simulation.end_check; 2
-		dq step_simulation.end_check; 3
+		dq step_simulation.live; 2
+		dq step_simulation.live; 3
 		dq step_simulation.die; 4
 		dq step_simulation.die; 5
 		dq step_simulation.die; 6
@@ -113,9 +113,9 @@ print_game_ui:
 	ret
 
 %macro check_if_hashtag 2
-	cmp r8, %1
+	cmp %1, r8
 	jl .no_count_%2
-	cmp r9, %1 
+	cmp %1, r9
 	ja .no_count_%2
 	mov r11b, [%1]
 	cmp r11b, '#' 
@@ -129,13 +129,16 @@ step_simulation:
 	mov rdi, [next_frame_ptr]; destination
 	mov rsi, [gameboard_ptr]; source 
 	mov rcx, [gameboard_size]; number of iterations
-
+	
 	mov r8, rsi; store lowest address posible so we are not checking out of bounds
 	mov r9, rsi
 	add r9, rcx; store higest address posible so we are not checking out of bounds
 
+	xor r10, r10
 	mov r10w, [term_cols]
 	;mov r11, [term_rows] this register has been confiscated since i cannot use ah because of error: cannot use high byte register in rex instruction
+
+	sub rcx, r10; remove status bar
 
 	xor rax, rax; this shouldn't be needed but just to be sure
 	xor r11, r11
@@ -146,33 +149,38 @@ step_simulation:
 	
 	
 	inc rsi
-	check_if_hashtag rsi, 1
+	check_if_hashtag rsi, 1; check column to the to the right
 	dec rsi
 
-	check_if_hashtag rsi-1, 2
-
+	dec rsi
+	check_if_hashtag rsi, 2; check the one to the left
+	inc rsi
 
 	add rsi, r10
 	
-	check_if_hashtag rsi, 3
+	check_if_hashtag rsi, 3; check the one to the down
 
 	inc rsi
-	check_if_hashtag rsi, 4
+	check_if_hashtag rsi, 4; check the one to the down-right
 	dec rsi
 
-	check_if_hashtag rsi-1, 5
+	dec rsi
+	check_if_hashtag rsi, 5; check the one to the down-left
+	inc rsi
 
 	sub rsi, r10
 
 
 	sub rsi, r10	
-	check_if_hashtag rsi, 6
+	check_if_hashtag rsi, 6; check the one to the up
 
 	inc rsi
-	check_if_hashtag rsi, 7
+	check_if_hashtag rsi, 7; check the one to the up-right
 	dec rsi
 
-	check_if_hashtag rsi-1, 8
+	dec rsi
+	check_if_hashtag rsi, 8; check the one to the up-left
+	inc rsi
 
 	add rsi, r10
 
@@ -185,10 +193,17 @@ step_simulation:
 	mov byte [rdi], 0x20; SPACE
 	jmp .end_check
 
+	.live:
+	mov byte [rdi], '#'
+	jmp .end_check
+
 	.dead_cell:
 	cmp dl, 3 
-	jne .end_check
+	jne .fill_space_there
 	mov byte [rdi], '#'
+	jmp .end_check
+	.fill_space_there:
+	mov byte [rdi], 0x20; SPACE
 
 	.end_check:
 	dec rcx
@@ -197,9 +212,10 @@ step_simulation:
 	test rcx, rcx
 	jnz .for_every_column_on_gameboard
 
-	mov rsi, [next_frame_ptr]; destination
-	mov rdi, [gameboard_ptr]; source 
+	mov rsi, [next_frame_ptr]; source
+	mov rdi, [gameboard_ptr]; destination 
 	mov rdx, [gameboard_size]; number of iterations
+	sub rdx, r10; remove statusbar
 
 	call memory_copy
 

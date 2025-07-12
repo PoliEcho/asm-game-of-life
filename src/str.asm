@@ -154,10 +154,16 @@ memory_copy:; takes  destination in rdi, source in rsi and lenght in rdx
 
 	mov r9, rdi
 
-	mov rax, rdx
-	div 8
+	mov rcx, rdx
+	shr rcx, 3; calculate how many 8 byte chunks we need
+	and rdx, 0x7; calculate the reminder
 
-	mov
+	rep movsq; move as many 8 byte chunks as posible
 
-	mov rax, r9; return pointer to memory area same as memset in libc
+	mov rcx, rdx
+
+	rep movsb; move the rest
+
+
+	mov rax, r9; return pointer to memory area same as memcpy in libc
 	ret	
