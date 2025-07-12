@@ -7,9 +7,9 @@ jobs:
     steps:
       - name: fix package cache
         run: rm -fr /var/cache/pacman/pkg/*
-             sudo pacman -S archlinux-keyring
-             sudo pacman-key --init
-             sudo pacman-key --populate archlinux
+        run: sudo pacman -S archlinux-keyring
+        run: sudo pacman-key --init
+        run: sudo pacman-key --populate archlinux
       - name: get dependencies
         run: pacman -Sy nodejs make nasm --needed --noconfirm
 
