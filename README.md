@@ -18,5 +18,14 @@
 make
 ```
 
+## Controls
+| key    | action                  |
+|--------|-------------------------|
+| arrows | move cursor             |
+| ENTER  | invert cell             |
+| j/k    | change simulation speed |
+| q      | quit                    |
+
+
 ## Warning  
 delays in TTY may be broken
