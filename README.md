@@ -24,6 +24,7 @@ make
 | arrows | move cursor             |
 | ENTER  | invert cell             |
 | j/k    | change simulation speed |
+| p      | start/stop simulation   |
 | q      | quit                    |
 
 
