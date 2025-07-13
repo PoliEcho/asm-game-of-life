@@ -30,3 +30,6 @@ make
 
 ## Warning  
 delays in TTY may be broken
+
+## Notes  
+if screen does not clear properly after loading just move the cursor around a bit
