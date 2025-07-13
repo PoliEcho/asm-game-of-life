@@ -14,6 +14,8 @@ section .bss
 	simulation_running: RESB 1
 
 	next_frame_ptr: RESQ 1
+section .data 
+	extern simulation_speed
 
 section .rodata 
 	clear: 		db ESC_CHAR, "[2J", 0
@@ -24,8 +26,9 @@ section .rodata
 
 	home_cursor:	db ESC_CHAR, "[H", 0
 
-	statusbar:	db ESC_CHAR, "[32;100m", "Use arrow keys to move cursor, enter to invert cell j/k to change simulation speed, p to       simulation", 0
-	START_STOP_pos: equ $-statusbar-17
+	statusbar:	db ESC_CHAR, "[32;100m", "Use arrow keys to move cursor, enter to invert cell j/k to change simulation speed, p to       simulation. SPEED:", 0
+	statusbarLen:	equ $-statusbar
+	START_STOP_pos: equ statusbarLen-25
 	
 	
 	start_str:	db "START", 0
@@ -49,6 +52,7 @@ extern string_copy
 extern memory_set
 extern memory_copy
 extern alloc
+extern unsigned_int_to_ascii
 
 global init_gameboard
 init_gameboard:
@@ -95,6 +99,7 @@ print_game_ui:
 	push rdi
 	add rdi, [gameboard_size]
 	sub di, [term_cols]
+	push rdi
 	add rdi, START_STOP_pos
 	
 	mov cl, [simulation_running]
@@ -106,6 +111,34 @@ print_game_ui:
 	lea rsi, [start_str]
 	.end_simulation_running_check:
 	call string_copy
+
+	pop rdi
+	add rdi, statusbarLen 
+
+	movss xmm0, [simulation_speed]
+
+	cvttss2si rsi, xmm0
+	push rsi
+	push rdi
+	call unsigned_int_to_ascii
+	pop rdi 
+	add rdi, rax
+
+	mov byte [rdi], '.'
+	inc rdi
+
+	pop rax
+	cvtsi2ss xmm1, rax
+	
+	subss xmm0, xmm1; get only value after decimal point 
+	mov rax, 10 
+	cvtsi2ss xmm1, rax
+
+	mulss xmm0, xmm1
+	cvttss2si rsi, xmm0; get first decimal point as int 
+
+	call unsigned_int_to_ascii; rdi already set
+	
 
 	pop rdi
 	call print_str

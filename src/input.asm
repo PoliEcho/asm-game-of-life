@@ -15,6 +15,10 @@ section .bss
 section .data 
 	cursor_rows: dw 1
 	cursor_cols: dw 1
+
+
+	global simulation_speed
+	simulation_speed dd 1.0
 section .rodata
 	extern reset
 
@@ -24,6 +28,8 @@ section .rodata
 	cursor_left: db ESC_CHAR, "[1D", 0
 
 	cursor_color: db ESC_CHAR, "[45m", 0
+
+	speed_multiplier dd 50.0
 
 	arrow_switch_statement:
 		dq handle_user_input.arrow_up
@@ -63,7 +69,10 @@ handle_user_input:; main loop of the program
 	mov word [r12+4], POLLIN
 	mov rdi, r12
 	mov rsi, 1; only one file descriptor is provided
-	mov rdx, 50; no timeout. maybe use this for final sleep but run if user inputs something TODO
+	movss xmm0, [speed_multiplier]
+	movss xmm1, [simulation_speed]
+	mulss xmm0, xmm1; callculate sleep lenght
+	cvttss2si rdx, xmm0; truncate and copy to rdx 
 	syscall
 
 	test rax, rax; SYS_POLL returns 0 when no change happens within timeout
@@ -179,15 +188,31 @@ handle_user_input:; main loop of the program
 	cmp al, 'j'
 	jne .check_k
 
-	; TODO implement simulation speed
+	movss xmm0, [simulation_speed]
+	mov eax, 0x3DCCCCCD; 0.1f
+	vmovd xmm1, eax
+
+	addss xmm0, xmm1
+	; wont check for overflows since the user would need be crazy to reach that number
+	movss [simulation_speed], xmm0
 
 	jmp .end_input_handling	
 
 	.check_k:
 	cmp al, 'k'
 	jne .check_q
+	
+	movss xmm0, [simulation_speed]
+	mov eax, 0x3DCCCCCD; 0.1f
+	vmovd xmm1, eax
 
-	; TODO implement simulation speed
+	subss xmm0, xmm1
+
+	ucomiss xmm0, xmm1; check if number is smaller than 0.1
+	jb .end_input_handling
+	movss [simulation_speed], xmm0
+
+	jmp .end_input_handling
 
 	.check_q:
 	cmp al, 'q'
@@ -206,15 +231,6 @@ handle_user_input:; main loop of the program
 	mov r13b, 1
 	.dont_step:
 	
-	%ifdef COMMENT
-	lea rdi, [multipurpuse_buf]
-	mov qword [multipurpuse_buf], 0
-	mov qword [multipurpuse_buf+8], 50000000; 50ms
-	mov rax, SYS_NANOSLEEP
-	mov rsi, 0 
-	syscall
-	%endif
-
 	test r13b, r13b
 	jz .main_loop
 	call print_game_ui

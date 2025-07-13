@@ -95,6 +95,8 @@ _start:
 
 	call disable_canonical_mode_and_echo
 
+	call print_game_ui
+
 	call handle_user_input
 
 	call reset_terminal
