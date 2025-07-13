@@ -26,9 +26,9 @@ section .rodata
 
 	home_cursor:	db ESC_CHAR, "[H", 0
 
-	statusbar:	db ESC_CHAR, "[32;100m", "Use arrow keys to move cursor, enter to invert cell j/k to change simulation speed, p to       simulation. SPEED:", 0
+	statusbar:	db ESC_CHAR, "[32;100m", "Use arrow keys to move cursor, enter to invert cell j/k to change simulation speed, p to       simulation. Frame Delay multiplier:", 0
 	statusbarLen:	equ $-statusbar
-	START_STOP_pos: equ statusbarLen-25
+	START_STOP_pos: equ statusbarLen-42
 	
 	
 	start_str:	db "START", 0
