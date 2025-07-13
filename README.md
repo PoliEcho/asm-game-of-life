@@ -11,7 +11,7 @@
 > make  
 
 ## Download
-#### TODO: add releases link
+[releases](https://git.pupes.org/PoliEcho/asm-game-of-life/releases)
 
 ## Build  
 ```shell
