@@ -12,8 +12,6 @@ section .bss
 	extern gameboard_ptr
 
 	extern simulation_running
-
-	extern running_in_tty
 section .data 
 	cursor_rows: dw 1
 	cursor_cols: dw 1
@@ -66,46 +64,16 @@ handle_user_input:; main loop of the program
 	xor rax, rax
 	mov qword [r12], rax; zeroout the buffer
 
-	movss xmm0, [speed_multiplier]
-	movss xmm1, [simulation_speed]
-	mulss xmm0, xmm1; callculate sleep lenght
-	cvttss2si rdx, xmm0; truncate and copy to rdx 
-
-	mov byte al, [running_in_tty]
-	test al, al; test if we are running in tty
-	jz .pts
-	
-	mov rax, rdx
-	xor rdx, rdx
-	mov rcx, 1000; convert miliseconds to seconds
-	div rcx
-
-	mov qword [r12], rax; store seconds
-
-	mov rax, rdx
-	xor rdx, rdx
-	mov rcx, 1000000
-	mul rcx
-
-	mov qword [r12+8], rax; store nanoseconds
-	mov rax, SYS_NANOSLEEP
-	mov rdi, r12
-	xor rsi, rsi; ignore some remaining time or something
-	syscall
-	
-	mov rax, 1; simulate sys_poll output
-	jmp .end_input_handling
-
-	.pts:
 	mov rax, SYS_POLL
 	mov dword [r12], STDIN; create pollfd struct
 	mov word [r12+4], POLLIN
 	mov rdi, r12
 	mov rsi, 1; only one file descriptor is provided
-	; rdi already set
+	movss xmm0, [speed_multiplier]
+	movss xmm1, [simulation_speed]
+	mulss xmm0, xmm1; callculate sleep lenght
+	cvttss2si rdx, xmm0; truncate and copy to rdx 
 	syscall
-
-	.end_delay_handling:
 
 	test rax, rax; SYS_POLL returns 0 when no change happens within timeout
 	jz .no_input
