@@ -17,3 +17,6 @@
 ```shell
 make
 ```
+
+## Warning  
+delays in TTY may be broken
