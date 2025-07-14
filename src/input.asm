@@ -12,6 +12,8 @@ section .bss
 	extern gameboard_ptr
 
 	extern simulation_running
+
+	extern running_in_tty
 section .data 
 	cursor_rows: dw 1
 	cursor_cols: dw 1
@@ -49,6 +51,7 @@ global handle_user_input
 handle_user_input:; main loop of the program
 	push r12
 	push r13
+	push r14
 	
 
 	lea r12, [multipurpuse_buf]
@@ -72,11 +75,25 @@ handle_user_input:; main loop of the program
 	movss xmm0, [speed_multiplier]
 	movss xmm1, [simulation_speed]
 	mulss xmm0, xmm1; callculate sleep lenght
-	cvttss2si rdx, xmm0; truncate and copy to rdx 
+	cvttss2si rdx, xmm0; truncate and copy to rdx
+	mov r14, rdx
 	syscall
 
+	mov sil, [running_in_tty]
+	test sil, sil
+	jz .skip_tty_mul
+	push rax
+	mov rax, 2500; magic number
+	xor rdx,rdx
+	mul r14
+	mov r14, rax
+	pop rax
+
+	.skip_tty_mul:
 	test rax, rax; SYS_POLL returns 0 when no change happens within timeout
 	jz .no_input
+
+	.repeat_read:
 
 	xor rax, rax
 	mov qword [r12], rax; zeroout the buffer
@@ -88,8 +105,18 @@ handle_user_input:; main loop of the program
 	syscall; read user input
 
 	cmp rax, EAGAIN
-	je .no_input
+	jne .handle_input
+	mov al, [running_in_tty]
+	test al, al
+	jz .no_input
+	; this runs only if running in tty
 
+	test r14, r14
+	jz .no_input; timeout 
+	dec r14
+	jmp .repeat_read
+
+	.handle_input:
 	mov rax, [r12]
 	
 	cmp eax, 0x00415B1B; check if input is more than left arrow
@@ -237,6 +264,7 @@ handle_user_input:; main loop of the program
 	jmp .main_loop
 
 .function_exit:
+	pop r14
 	pop r13
 	pop r12
 	ret
