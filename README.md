@@ -33,4 +33,5 @@ delays in TTY may be diferent depending on cpu clockspeed use j/k to adjust
 
 ## Notes  
 if screen does not clear properly after loading just move the cursor around a bit  
-looks best in TTY
+looks best in TTY  
+it sometimes SEGFAULTS in TTY on start but only on non debug builds and it is not consistent
