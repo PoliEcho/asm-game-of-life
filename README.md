@@ -11,9 +11,25 @@
 > make  
 
 ## Download
-#### TODO: add releases link
+[releases](https://git.pupes.org/PoliEcho/asm-game-of-life/releases)
 
 ## Build  
 ```shell
 make
 ```
+
+## Controls
+| key    | action                  |
+|--------|-------------------------|
+| arrows | move cursor             |
+| ENTER  | invert cell             |
+| j/k    | change simulation speed |
+| p      | start/stop simulation   |
+| q      | quit                    |
+
+
+## Warning  
+delays in TTY may be broken
+
+## Notes  
+if screen does not clear properly after loading just move the cursor around a bit
