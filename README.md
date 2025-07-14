@@ -29,7 +29,7 @@ make
 
 
 ## Warning  
-delays in TTY may be broken
+delays in TTY may be diferent depending on cpu clockspeed use j/k to adjust
 
 ## Notes  
 if screen does not clear properly after loading just move the cursor around a bit
